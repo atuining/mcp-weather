@@ -3,10 +3,14 @@ from typing import Any
 from datetime import datetime
 
 import httpx
+from starlette.requests import Request
+from starlette.responses import HTMLResponse
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
 from starlette.applications import Starlette
-from starlette.routing import Mount
+from starlette.routing import Mount, Route
+from mcp.server import Server
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -63,11 +67,58 @@ UV: {forecast["day"]["uv"]}
     return "\n--\n".join(pretty)
 
 
-app = Starlette(
-    routes=[
-        Mount("/", app=mcp.sse_app()),
-    ]
-)
+async def homepage(request: Request) -> HTMLResponse:
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>MCP Weather</title>
+        <style>
+        body {
+            display: grid;
+            place: center;
+        }
+        </style>
+    </head>
+    <body>
+        <h1>MCP Weather</h1>
+        <p>An MCP to get weather forecasts for the next 3 days for any city</p>
+    </body>
+    """
+    return HTMLResponse(html_content)
+
+
+def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
+    """Create a Starlette application that can serve the provided mcp server with SSE."""
+    sse = SseServerTransport("/messages/")
+
+    async def handle_sse(request: Request) -> None:
+        async with sse.connect_sse(
+            request.scope,
+            request.receive,
+            request._send,
+        ) as (read_stream, write_stream):
+            await mcp_server.run(
+                read_stream,
+                write_stream,
+                mcp_server.create_initialization_options(),
+            )
+
+    return Starlette(
+        debug=debug,
+        routes=[
+            Route("/", endpoint=homepage),  # Add the homepage route
+            Route("/sse", endpoint=handle_sse),
+            Mount("/messages/", app=sse.handle_post_message),
+        ],
+    )
+
 
 if __name__ == "__main__":
+    mcp_server = mcp._mcp_server
+
+    app = create_starlette_app(mcp_server, debug=True)
+
     uvicorn.run(app, host="0.0.0.0", port=8080)
