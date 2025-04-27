@@ -4,4 +4,10 @@ version = "0.1.0"
 description = "MCP to get forecast of next 3 days using https://www.weatherapi.com/"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28.1", "mcp[cli]>=1.6.0", "python-dotenv>=1.1.0"]
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.6.0",
+    "python-dotenv>=1.1.0",
+    "starlette>=0.46.2",
+    "uvicorn>=0.34.2",
+]

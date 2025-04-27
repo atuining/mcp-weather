@@ -1,5 +1,6 @@
 .env
 .jj
+.python-version
 
 # Python-generated files
 __pycache__/
