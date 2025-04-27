@@ -74,6 +74,7 @@ async def homepage(request: Request) -> HTMLResponse:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="mcp-verification" content="LpGqCUexiCatuBEQJmtZWTJnEkctZDH4JI_F9LdxlGA">
         <title>MCP Weather</title>
         <style>
         body {
