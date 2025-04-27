@@ -1,17 +1,19 @@
 from typing import Any
+import argparse
+
 import httpx
+import uvicorn  # ASGI server
+from mcp.server import Server  # Base server class
 from mcp.server.fastmcp import FastMCP  # Main MCP server class
-from starlette.applications import Starlette  # ASGI framework
 from mcp.server.sse import SseServerTransport  # SSE transport implementation
+from starlette.applications import Starlette  # ASGI framework
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.routing import Mount, Route
-from mcp.server import Server  # Base server class
-import uvicorn  # ASGI server
 
 # Initialize FastMCP server with a name
 # This name appears to clients when they connect
-app = FastMCP("weather")
+mcp = FastMCP("weather")
 
 # Constants for API access
 NWS_API_BASE = "https://api.weather.gov"
@@ -53,7 +55,7 @@ Instructions: {props.get("instruction", "No specific instructions provided")}
 
 # Define a tool using the @mcp.tool() decorator
 # This makes the function available as a callable tool to MCP clients
-@app.tool()
+@mcp.tool()
 async def get_alerts(state: str) -> str:
     """Get weather alerts for a US state.
 
@@ -74,7 +76,7 @@ async def get_alerts(state: str) -> str:
 
 
 # Define another tool
-@app.tool()
+@mcp.tool()
 async def get_forecast(latitude: float, longitude: float) -> str:
     """Get weather forecast for a location.
 
@@ -239,18 +241,15 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
     )
 
 
-if __name__ == "__main__":
-    # Get the underlying MCP server from FastMCP wrapper
-    mcp_server = app._mcp_server
+mcp_server = mcp._mcp_server
 
-    import argparse
 
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="Run MCP SSE-based server")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
-    args = parser.parse_args()
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Run MCP SSE-based server")
+parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
+parser.add_argument("--port", type=int, default=8080, help="Port to listen on")
+args = parser.parse_args()
 
-    # Create and run the Starlette application
-    starlette_app = create_starlette_app(mcp_server, debug=True)
-    uvicorn.run(starlette_app, host=args.host, port=args.port)
+# Create and run the Starlette application
+app = create_starlette_app(mcp_server, debug=True)
+uvicorn.run(app, host=args.host, port=args.port)
