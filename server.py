@@ -11,7 +11,7 @@ import uvicorn  # ASGI server
 
 # Initialize FastMCP server with a name
 # This name appears to clients when they connect
-mcp = FastMCP("weather")
+app = FastMCP("weather")
 
 # Constants for API access
 NWS_API_BASE = "https://api.weather.gov"
@@ -53,7 +53,7 @@ Instructions: {props.get("instruction", "No specific instructions provided")}
 
 # Define a tool using the @mcp.tool() decorator
 # This makes the function available as a callable tool to MCP clients
-@mcp.tool()
+@app.tool()
 async def get_alerts(state: str) -> str:
     """Get weather alerts for a US state.
 
@@ -74,7 +74,7 @@ async def get_alerts(state: str) -> str:
 
 
 # Define another tool
-@mcp.tool()
+@app.tool()
 async def get_forecast(latitude: float, longitude: float) -> str:
     """Get weather forecast for a location.
 
@@ -241,7 +241,7 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
 
 if __name__ == "__main__":
     # Get the underlying MCP server from FastMCP wrapper
-    mcp_server = mcp._mcp_server
+    mcp_server = app._mcp_server
 
     import argparse
 
